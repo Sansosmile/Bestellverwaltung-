@@ -15,7 +15,7 @@
     }
     *{box-sizing:border-box}
     body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
-    button,input{font:inherit}
+    button,input,select{font:inherit}
     button{cursor:pointer}
     .wrap{width:min(1220px,calc(100% - 18px));margin:20px auto 60px}
     .topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:18px}
@@ -30,15 +30,18 @@
     .panel.active{display:block}
     .section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
     h2{font-size:21px;margin:0}
+    h3{font-size:16px;margin:0 0 10px}
     .actions{display:flex;gap:8px;flex-wrap:wrap}
     .btn{border:0;border-radius:10px;padding:11px 14px;font-weight:700}
     .btn-primary{background:var(--primary);color:#fff}
     .btn-light{background:#fff;border:1px solid var(--line);color:var(--text)}
     .btn-danger{background:var(--danger-bg);color:var(--danger)}
+    .btn-small{padding:7px 9px;font-size:13px}
     .btn:disabled{opacity:.45;cursor:not-allowed}
     .card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.045)}
+    .card-inner{padding:14px}
     .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
-    table{width:100%;border-collapse:collapse;min-width:1050px}
+    table{width:100%;border-collapse:collapse;min-width:1180px}
     th,td{padding:10px;border-bottom:1px solid var(--line);vertical-align:middle}
     th{background:var(--soft);font-size:13px;color:#4b5563;text-align:left;white-space:nowrap}
     tbody tr:last-child td{border-bottom:0}
@@ -47,6 +50,9 @@
     .article-input{min-width:190px}
     .quantity-input{min-width:85px}
     .price-input{min-width:95px}
+    .link-input{min-width:240px}
+    .category-select{width:100%;min-width:150px;padding:9px;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--text)}
+    .category-select:focus{outline:none;border-color:#9ca3af;background:#fff}
     .center{text-align:center}
     input[type=checkbox],input[type=radio]{width:21px;height:21px;cursor:pointer}
     .row-action{border:0;border-radius:8px;padding:8px 10px;background:var(--danger-bg);color:var(--danger);font-weight:700}
@@ -54,6 +60,19 @@
     .selectable.selected{background:var(--selected);box-shadow:inset 4px 0 0 var(--selected-border)}
     .empty{padding:30px;text-align:center;color:var(--muted)}
     .notice{margin-top:10px;color:var(--muted);font-size:13px}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+    .search-input{flex:1;min-width:240px;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:#fff}
+    .filter-select{min-width:190px;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:#fff}
+    .category-manager{margin-bottom:14px}
+    .category-add{display:flex;gap:8px;flex-wrap:wrap}
+    .category-add input{flex:1;min-width:220px;padding:10px 12px;border:1px solid var(--line);border-radius:10px}
+    .category-list{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+    .category-chip{display:inline-flex;align-items:center;gap:7px;padding:7px 9px;border:1px solid var(--line);border-radius:999px;background:#fff;font-size:13px}
+    .category-chip button{border:0;background:transparent;color:var(--danger);font-weight:700;padding:0 2px}
+    .link-cell{display:flex;align-items:center;gap:7px;min-width:250px}
+    .link-cell .link-input{flex:1}
+    .link-open{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;text-decoration:none;border:1px solid var(--line);border-radius:8px;padding:8px 9px;background:#fff;color:var(--text);font-weight:700}
+    .link-open.disabled{opacity:.45;pointer-events:none}
     .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#111827;color:#fff;padding:11px 15px;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:.2s;z-index:99}
     .toast.show{opacity:1}
     .archive-badge{font-size:12px;color:var(--muted)}
@@ -63,6 +82,8 @@
       .actions{width:100%}
       .actions .btn{flex:1}
       .section-head{align-items:stretch}
+      .toolbar{flex-direction:column}
+      .search-input,.filter-select{width:100%}
     }
   </style>
 </head>
@@ -95,7 +116,8 @@
             <tr>
               <th>Hersteller</th>
               <th>Artikelbezeichnung</th>
-              <th>Lotnummer</th>
+              <th>REF Nummer</th>
+              <th>Link</th>
               <th>Menge</th>
               <th>Preis</th>
               <th>Bestellt</th>
@@ -117,6 +139,25 @@
           <button id="copyStandard" class="btn btn-primary" disabled>In Bestellliste übernehmen</button>
         </div>
       </div>
+
+      <div class="card category-manager">
+        <div class="card-inner">
+          <h3>Kategorien verwalten</h3>
+          <div class="category-add">
+            <input id="newCategoryName" placeholder="Neue Kategorie, z. B. Rohlinge" maxlength="100">
+            <button id="addCategory" class="btn btn-light">＋ Kategorie hinzufügen</button>
+          </div>
+          <div id="categoryList" class="category-list"></div>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <input id="standardSearch" class="search-input" placeholder="🔎 Standardartikel suchen …">
+        <select id="categoryFilter" class="filter-select">
+          <option value="">Alle Kategorien</option>
+        </select>
+      </div>
+
       <div class="card"><div class="scroll">
         <table>
           <thead>
@@ -124,16 +165,18 @@
               <th>Auswahl</th>
               <th>Hersteller</th>
               <th>Artikelbezeichnung</th>
-              <th>Lotnummer</th>
+              <th>REF Nummer</th>
+              <th>Kategorie</th>
               <th>Standardmenge</th>
               <th>Preis</th>
+              <th>Link</th>
               <th>Aktion</th>
             </tr>
           </thead>
           <tbody id="standardBody"></tbody>
         </table>
       </div></div>
-      <div class="notice">Erst Artikel auswählen, dann „In Bestellliste übernehmen“ drücken. So wird nichts versehentlich übernommen.</div>
+      <div class="notice">Die Suche durchsucht Hersteller, Artikelbezeichnung, REF Nummer und Kategorie. Erst Artikel auswählen, dann „In Bestellliste übernehmen“ drücken.</div>
     </section>
 
     <section id="archive" class="panel">
@@ -146,7 +189,8 @@
             <tr>
               <th>Hersteller</th>
               <th>Artikelbezeichnung</th>
-              <th>Lotnummer</th>
+              <th>REF Nummer</th>
+              <th>Link</th>
               <th>Menge</th>
               <th>Preis</th>
               <th>Aktion</th>
@@ -167,7 +211,10 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let orders = [];
 let standards = [];
+let categories = [];
 let selectedStandardId = null;
+let standardSearch = '';
+let categoryFilter = '';
 let saveTimers = new Map();
 
 const ordersBody = document.getElementById('ordersBody');
@@ -175,9 +222,15 @@ const standardBody = document.getElementById('standardBody');
 const archiveBody = document.getElementById('archiveBody');
 const copyStandardBtn = document.getElementById('copyStandard');
 const connection = document.getElementById('connection');
+const standardSearchInput = document.getElementById('standardSearch');
+const categoryFilterSelect = document.getElementById('categoryFilter');
+const categoryList = document.getElementById('categoryList');
+const newCategoryName = document.getElementById('newCategoryName');
 
 function esc(v) {
-  return String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[m]);
+  return String(v ?? '').replace(/[&<>"']/g, m => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+  })[m]);
 }
 
 function toast(msg) {
@@ -193,16 +246,48 @@ function setConnection(ok) {
   connection.classList.toggle('offline', !ok);
 }
 
+function categoryName(id) {
+  const c = categories.find(x => Number(x.id) === Number(id));
+  return c ? c.name : '';
+}
+
+function validUrl(value) {
+  try {
+    const u = new URL(String(value || '').trim());
+    return u.protocol === 'http:' || u.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+function linkCell(item, idAttr, id, field='link') {
+  const value = item[field] || '';
+  const safeHref = validUrl(value) ? esc(value) : '';
+  const button = safeHref
+    ? `<a class="link-open" href="${safeHref}" target="_blank" rel="noopener noreferrer">🔗 Öffnen</a>`
+    : `<span class="link-open disabled">🔗 Öffnen</span>`;
+  return `<div class="link-cell">
+    <input class="cell-input link-input" ${idAttr}="${id}" data-field="${field}" value="${esc(value)}" placeholder="https://...">
+    ${button}
+  </div>`;
+}
+
 async function loadAll(showError=true) {
   try {
-    const [o, s] = await Promise.all([
+    const [o, s, c] = await Promise.all([
       db.from('orders').select('*').order('created_at', {ascending:true}),
-      db.from('standard_items').select('*').order('created_at', {ascending:true})
+      db.from('standard_items').select('*').order('created_at', {ascending:true}),
+      db.from('categories').select('*').order('name', {ascending:true})
     ]);
+
     if (o.error) throw o.error;
     if (s.error) throw s.error;
+    if (c.error) throw c.error;
+
     orders = o.data || [];
     standards = s.data || [];
+    categories = c.data || [];
+
     setConnection(true);
     renderAll();
   } catch (e) {
@@ -214,6 +299,7 @@ async function loadAll(showError=true) {
 
 function renderAll() {
   renderOrders();
+  renderCategoryControls();
   renderStandards();
   renderArchive();
 }
@@ -224,15 +310,18 @@ function orderInput(item, field, cls='') {
 
 function renderOrders() {
   const active = orders.filter(x => !x.archived);
+
   if (!active.length) {
-    ordersBody.innerHTML = `<tr><td colspan="8" class="empty">Aktuell keine offenen Bestellungen.</td></tr>`;
+    ordersBody.innerHTML = `<tr><td colspan="9" class="empty">Aktuell keine offenen Bestellungen.</td></tr>`;
     return;
   }
+
   ordersBody.innerHTML = active.map(item => `
     <tr>
       <td>${orderInput(item,'manufacturer')}</td>
       <td>${orderInput(item,'article','article-input')}</td>
       <td>${orderInput(item,'lot_number')}</td>
+      <td>${linkCell(item, 'data-order-id', item.id)}</td>
       <td>${orderInput(item,'quantity','quantity-input')}</td>
       <td>${orderInput(item,'price','price-input')}</td>
       <td class="center"><input type="checkbox" data-order-check="${item.id}" data-field="ordered" ${item.ordered?'checked':''}></td>
@@ -246,42 +335,101 @@ function standardInput(item, field, cls='') {
   return `<input class="cell-input ${cls}" data-standard-id="${item.id}" data-field="${field}" value="${esc(item[field])}">`;
 }
 
+function filteredStandards() {
+  const q = standardSearch.trim().toLowerCase();
+
+  return standards.filter(item => {
+    const cat = categoryName(item.category_id);
+    const matchesCategory = !categoryFilter || String(item.category_id) === String(categoryFilter);
+    const haystack = [
+      item.manufacturer,
+      item.article,
+      item.lot_number,
+      cat
+    ].map(v => String(v ?? '').toLowerCase()).join(' ');
+
+    return matchesCategory && (!q || haystack.includes(q));
+  });
+}
+
+function renderCategoryControls() {
+  const currentFilter = categoryFilter;
+
+  categoryFilterSelect.innerHTML =
+    `<option value="">Alle Kategorien</option>` +
+    categories.map(c => `<option value="${c.id}" ${String(c.id)===String(currentFilter)?'selected':''}>${esc(c.name)}</option>`).join('');
+
+  if (currentFilter && !categories.some(c => String(c.id) === String(currentFilter))) {
+    categoryFilter = '';
+    categoryFilterSelect.value = '';
+  }
+
+  categoryList.innerHTML = categories.length
+    ? categories.map(c => `
+        <span class="category-chip">
+          ${esc(c.name)}
+          <button type="button" title="Kategorie löschen" data-delete-category="${c.id}">×</button>
+        </span>
+      `).join('')
+    : `<span class="notice">Noch keine Kategorien angelegt.</span>`;
+}
+
 function renderStandards() {
+  const visible = filteredStandards();
+
   if (!standards.length) {
-    standardBody.innerHTML = `<tr><td colspan="7" class="empty">Noch keine Standardartikel vorhanden.</td></tr>`;
+    standardBody.innerHTML = `<tr><td colspan="9" class="empty">Noch keine Standardartikel vorhanden.</td></tr>`;
     selectedStandardId = null;
     copyStandardBtn.disabled = true;
     return;
   }
-  standardBody.innerHTML = standards.map(item => `
+
+  if (!visible.length) {
+    standardBody.innerHTML = `<tr><td colspan="9" class="empty">Keine Standardartikel passend zur Suche bzw. Kategorie gefunden.</td></tr>`;
+    copyStandardBtn.disabled = !selectedStandardId || !standards.some(x => x.id === selectedStandardId);
+    return;
+  }
+
+  standardBody.innerHTML = visible.map(item => `
     <tr class="selectable ${selectedStandardId===item.id?'selected':''}" data-select-standard="${item.id}">
       <td class="center"><input type="radio" name="standardChoice" ${selectedStandardId===item.id?'checked':''} data-radio-standard="${item.id}"></td>
       <td>${standardInput(item,'manufacturer')}</td>
       <td>${standardInput(item,'article','article-input')}</td>
       <td>${standardInput(item,'lot_number')}</td>
+      <td>
+        <select class="category-select" data-standard-id="${item.id}" data-category-field="category_id">
+          <option value="">Keine Kategorie</option>
+          ${categories.map(c => `<option value="${c.id}" ${String(item.category_id)===String(c.id)?'selected':''}>${esc(c.name)}</option>`).join('')}
+        </select>
+      </td>
       <td>${standardInput(item,'default_quantity','quantity-input')}</td>
       <td>${standardInput(item,'price','price-input')}</td>
+      <td>${linkCell(item, 'data-standard-id', item.id)}</td>
       <td><button class="row-action" data-delete-standard="${item.id}">Löschen</button></td>
     </tr>
   `).join('');
-  copyStandardBtn.disabled = !selectedStandardId;
+
+  copyStandardBtn.disabled = !selectedStandardId || !standards.some(x => x.id === selectedStandardId);
 }
 
 function renderArchive() {
   const archived = orders.filter(x => x.archived);
+
   if (!archived.length) {
-    archiveBody.innerHTML = `<tr><td colspan="6" class="empty">Das Archiv ist noch leer.</td></tr>`;
+    archiveBody.innerHTML = `<tr><td colspan="7" class="empty">Das Archiv ist noch leer.</td></tr>`;
     return;
   }
+
   archiveBody.innerHTML = archived.slice().reverse().map(item => `
     <tr>
       <td>${esc(item.manufacturer)}</td>
       <td>${esc(item.article)}</td>
       <td>${esc(item.lot_number)}</td>
+      <td>${linkCell(item, 'data-order-id', item.id)}</td>
       <td>${esc(item.quantity)}</td>
       <td>${esc(item.price)}</td>
       <td>
-        <button class="btn btn-light" style="padding:7px 9px" data-restore="${item.id}">Zurückholen</button>
+        <button class="btn btn-light btn-small" data-restore="${item.id}">Zurückholen</button>
       </td>
     </tr>
   `).join('');
@@ -292,30 +440,52 @@ async function addOrder(prefill={}) {
     manufacturer: prefill.manufacturer || '',
     article: prefill.article || '',
     lot_number: prefill.lot_number || '',
+    link: prefill.link || '',
     quantity: prefill.quantity || '',
     price: prefill.price || '',
     ordered: false,
     arrived: false,
     archived: false
   };
+
   const {data, error} = await db.from('orders').insert(payload).select().single();
-  if (error) return toast('Artikel konnte nicht angelegt werden');
+  if (error) {
+    console.error(error);
+    return toast('Artikel konnte nicht angelegt werden');
+  }
+
   orders.push(data);
   renderOrders();
   toast('Artikel hinzugefügt');
+
   setTimeout(() => {
     const el = document.querySelector(`[data-order-id="${data.id}"][data-field="manufacturer"]`);
-    if (el) { el.focus(); el.scrollIntoView({behavior:'smooth',block:'center',inline:'center'}); }
+    if (el) {
+      el.focus();
+      el.scrollIntoView({behavior:'smooth',block:'center',inline:'center'});
+    }
   }, 80);
 }
 
 async function addStandard() {
   const {data, error} = await db.from('standard_items').insert({
-    manufacturer:'', article:'', lot_number:'', default_quantity:'', price:''
+    manufacturer:'',
+    article:'',
+    lot_number:'',
+    link:'',
+    category_id:null,
+    default_quantity:'',
+    price:''
   }).select().single();
-  if (error) return toast('Standardartikel konnte nicht angelegt werden');
+
+  if (error) {
+    console.error(error);
+    return toast('Standardartikel konnte nicht angelegt werden');
+  }
+
   standards.push(data);
   renderStandards();
+
   setTimeout(() => {
     const el = document.querySelector(`[data-standard-id="${data.id}"][data-field="manufacturer"]`);
     if (el) el.focus();
@@ -325,40 +495,104 @@ async function addStandard() {
 function scheduleUpdate(table, id, field, value) {
   const key = `${table}:${id}:${field}`;
   clearTimeout(saveTimers.get(key));
+
   saveTimers.set(key, setTimeout(async () => {
     const {error} = await db.from(table).update({[field]:value}).eq('id', id);
-    if (error) toast('Speichern fehlgeschlagen');
+    if (error) {
+      console.error(error);
+      toast('Speichern fehlgeschlagen');
+    }
   }, 350));
+}
+
+async function addCategory() {
+  const name = newCategoryName.value.trim();
+  if (!name) return toast('Bitte einen Kategorienamen eingeben');
+
+  const exists = categories.some(c => c.name.trim().toLowerCase() === name.toLowerCase());
+  if (exists) return toast('Diese Kategorie gibt es bereits');
+
+  const {data, error} = await db.from('categories').insert({name}).select().single();
+  if (error) {
+    console.error(error);
+    return toast('Kategorie konnte nicht angelegt werden');
+  }
+
+  categories.push(data);
+  categories.sort((a,b) => a.name.localeCompare(b.name, 'de'));
+  newCategoryName.value = '';
+  renderCategoryControls();
+  renderStandards();
+  toast('Kategorie hinzugefügt');
+}
+
+async function deleteCategory(id) {
+  const category = categories.find(c => Number(c.id) === Number(id));
+  if (!category) return;
+
+  const assigned = standards.some(x => Number(x.category_id) === Number(id));
+  const question = assigned
+    ? `Die Kategorie "${category.name}" ist noch Standardartikeln zugeordnet. Beim Löschen verlieren diese Artikel nur die Kategorie. Wirklich löschen?`
+    : `Kategorie "${category.name}" wirklich löschen?`;
+
+  if (!confirm(question)) return;
+
+  const {error} = await db.from('categories').delete().eq('id', id);
+  if (error) {
+    console.error(error);
+    return toast('Kategorie konnte nicht gelöscht werden');
+  }
+
+  categories = categories.filter(c => Number(c.id) !== Number(id));
+  standards.forEach(item => {
+    if (Number(item.category_id) === Number(id)) item.category_id = null;
+  });
+
+  if (String(categoryFilter) === String(id)) categoryFilter = '';
+
+  renderAll();
+  toast('Kategorie gelöscht');
 }
 
 ordersBody.addEventListener('input', e => {
   const t = e.target;
   if (!t.dataset.orderId) return;
+
   const id = Number(t.dataset.orderId);
   const item = orders.find(x => x.id === id);
   if (!item) return;
+
   item[t.dataset.field] = t.value;
   scheduleUpdate('orders', id, t.dataset.field, t.value);
+
+  if (t.dataset.field === 'link') {
+    renderOrders();
+  }
 });
 
 ordersBody.addEventListener('change', async e => {
   const t = e.target;
   if (!t.dataset.orderCheck) return;
+
   const id = Number(t.dataset.orderCheck);
   const field = t.dataset.field;
   const item = orders.find(x => x.id === id);
   if (!item) return;
+
   item[field] = t.checked;
 
   if (field === 'arrived' && t.checked) {
     item.archived = true;
     const {error} = await db.from('orders').update({arrived:true, archived:true}).eq('id', id);
+
     if (error) {
-      item.arrived = false; item.archived = false;
+      item.arrived = false;
+      item.archived = false;
       toast('Archivieren fehlgeschlagen');
     } else {
       toast('Artikel ins Archiv verschoben');
     }
+
     renderAll();
     return;
   }
@@ -370,10 +604,13 @@ ordersBody.addEventListener('change', async e => {
 ordersBody.addEventListener('click', async e => {
   const btn = e.target.closest('[data-delete-order]');
   if (!btn) return;
+
   const id = Number(btn.dataset.deleteOrder);
   if (!confirm('Diesen Artikel wirklich löschen?')) return;
+
   const {error} = await db.from('orders').delete().eq('id', id);
   if (error) return toast('Löschen fehlgeschlagen');
+
   orders = orders.filter(x => x.id !== id);
   renderAll();
   toast('Artikel gelöscht');
@@ -382,18 +619,25 @@ ordersBody.addEventListener('click', async e => {
 standardBody.addEventListener('click', async e => {
   if (e.target.closest('[data-delete-standard]')) {
     const id = Number(e.target.closest('[data-delete-standard]').dataset.deleteStandard);
+
     if (!confirm('Diesen Standardartikel wirklich löschen?')) return;
+
     const {error} = await db.from('standard_items').delete().eq('id', id);
     if (error) return toast('Löschen fehlgeschlagen');
+
     standards = standards.filter(x => x.id !== id);
     if (selectedStandardId === id) selectedStandardId = null;
+
     renderStandards();
     toast('Standardartikel gelöscht');
     return;
   }
-  if (e.target.matches('input.cell-input')) return;
+
+  if (e.target.matches('input.cell-input, select.category-select, a.link-open')) return;
+
   const row = e.target.closest('[data-select-standard]');
   if (!row) return;
+
   selectedStandardId = Number(row.dataset.selectStandard);
   renderStandards();
 });
@@ -401,35 +645,102 @@ standardBody.addEventListener('click', async e => {
 standardBody.addEventListener('input', e => {
   const t = e.target;
   if (!t.dataset.standardId) return;
+
   const id = Number(t.dataset.standardId);
   const item = standards.find(x => x.id === id);
   if (!item) return;
+
   item[t.dataset.field] = t.value;
   scheduleUpdate('standard_items', id, t.dataset.field, t.value);
+
+  if (t.dataset.field === 'link') {
+    renderStandards();
+  }
+});
+
+standardBody.addEventListener('change', e => {
+  const t = e.target;
+
+  if (t.dataset.categoryField === 'category_id') {
+    const id = Number(t.dataset.standardId);
+    const item = standards.find(x => x.id === id);
+    if (!item) return;
+
+    const value = t.value ? Number(t.value) : null;
+    item.category_id = value;
+    scheduleUpdate('standard_items', id, 'category_id', value);
+    return;
+  }
+});
+
+archiveBody.addEventListener('input', e => {
+  const t = e.target;
+  if (!t.dataset.orderId) return;
+
+  const id = Number(t.dataset.orderId);
+  const item = orders.find(x => x.id === id);
+  if (!item) return;
+
+  item[t.dataset.field] = t.value;
+  scheduleUpdate('orders', id, t.dataset.field, t.value);
+
+  if (t.dataset.field === 'link') {
+    renderArchive();
+  }
 });
 
 archiveBody.addEventListener('click', async e => {
   const btn = e.target.closest('[data-restore]');
   if (!btn) return;
+
   const id = Number(btn.dataset.restore);
   const {error} = await db.from('orders').update({archived:false, arrived:false}).eq('id', id);
+
   if (error) return toast('Zurückholen fehlgeschlagen');
+
   const item = orders.find(x => x.id === id);
-  if (item) { item.archived=false; item.arrived=false; }
+  if (item) {
+    item.archived=false;
+    item.arrived=false;
+  }
+
   renderAll();
   toast('Artikel zurück in Bestellliste');
 });
 
 document.getElementById('addOrder').addEventListener('click', () => addOrder());
 document.getElementById('addStandard').addEventListener('click', addStandard);
+document.getElementById('addCategory').addEventListener('click', addCategory);
+
+newCategoryName.addEventListener('keydown', e => {
+  if (e.key === 'Enter') addCategory();
+});
+
+categoryList.addEventListener('click', e => {
+  const btn = e.target.closest('[data-delete-category]');
+  if (!btn) return;
+  deleteCategory(Number(btn.dataset.deleteCategory));
+});
+
+standardSearchInput.addEventListener('input', e => {
+  standardSearch = e.target.value;
+  renderStandards();
+});
+
+categoryFilterSelect.addEventListener('change', e => {
+  categoryFilter = e.target.value;
+  renderStandards();
+});
 
 copyStandardBtn.addEventListener('click', async () => {
   const item = standards.find(x => x.id === selectedStandardId);
   if (!item) return;
+
   await addOrder({
     manufacturer:item.manufacturer,
     article:item.article,
     lot_number:item.lot_number,
+    link:item.link,
     quantity:item.default_quantity,
     price:item.price
   });
@@ -439,6 +750,7 @@ document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
     document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+
     btn.classList.add('active');
     document.getElementById(btn.dataset.tab).classList.add('active');
   });
