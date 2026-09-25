@@ -69,9 +69,9 @@
     .category-list{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
     .category-chip{display:inline-flex;align-items:center;gap:7px;padding:7px 9px;border:1px solid var(--line);border-radius:999px;background:#fff;font-size:13px}
     .category-chip button{border:0;background:transparent;color:var(--danger);font-weight:700;padding:0 2px}
-    .link-cell{display:flex;align-items:center;gap:7px;min-width:250px}
-    .link-cell .link-input{flex:1}
+    .link-cell{display:flex;align-items:center;justify-content:center;min-width:92px}
     .link-open{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;text-decoration:none;border:1px solid var(--line);border-radius:8px;padding:8px 9px;background:#fff;color:var(--text);font-weight:700}
+    .link-edit{border:1px solid var(--line);border-radius:8px;padding:7px 9px;background:#fff;color:var(--text);font-weight:700}
     .link-open.disabled{opacity:.45;pointer-events:none}
     .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#111827;color:#fff;padding:11px 15px;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:.2s;z-index:99}
     .toast.show{opacity:1}
@@ -266,10 +266,7 @@ function linkCell(item, idAttr, id, field='link') {
   const button = safeHref
     ? `<a class="link-open" href="${safeHref}" target="_blank" rel="noopener noreferrer">🔗 Öffnen</a>`
     : `<span class="link-open disabled">🔗 Öffnen</span>`;
-  return `<div class="link-cell">
-    <input class="cell-input link-input" ${idAttr}="${id}" data-field="${field}" value="${esc(value)}" placeholder="https://...">
-    ${button}
-  </div>`;
+  return `<div class="link-cell">${button}</div>`;
 }
 
 async function loadAll(showError=true) {
@@ -405,7 +402,10 @@ function renderStandards() {
       <td>${standardInput(item,'default_quantity','quantity-input')}</td>
       <td>${standardInput(item,'price','price-input')}</td>
       <td>${linkCell(item, 'data-standard-id', item.id)}</td>
-      <td><button class="row-action" data-delete-standard="${item.id}">Löschen</button></td>
+      <td>
+        <button class="link-edit" data-edit-standard-link="${item.id}">🔗 Link</button>
+        <button class="row-action" data-delete-standard="${item.id}">Löschen</button>
+      </td>
     </tr>
   `).join('');
 
@@ -565,9 +565,6 @@ ordersBody.addEventListener('input', e => {
   item[t.dataset.field] = t.value;
   scheduleUpdate('orders', id, t.dataset.field, t.value);
 
-  if (t.dataset.field === 'link') {
-    renderOrders();
-  }
 });
 
 ordersBody.addEventListener('change', async e => {
@@ -617,6 +614,32 @@ ordersBody.addEventListener('click', async e => {
 });
 
 standardBody.addEventListener('click', async e => {
+  const linkBtn = e.target.closest('[data-edit-standard-link]');
+  if (linkBtn) {
+    const id = Number(linkBtn.dataset.editStandardLink);
+    const item = standards.find(x => x.id === id);
+    if (!item) return;
+
+    const value = prompt('Artikel-Link einfügen oder ändern:', item.link || 'https://');
+    if (value === null) return;
+
+    const link = value.trim();
+    if (link && !validUrl(link)) {
+      return toast('Bitte einen gültigen http:// oder https:// Link eingeben');
+    }
+
+    const {error} = await db.from('standard_items').update({link}).eq('id', id);
+    if (error) {
+      console.error(error);
+      return toast('Link konnte nicht gespeichert werden');
+    }
+
+    item.link = link;
+    renderStandards();
+    toast('Link gespeichert');
+    return;
+  }
+
   if (e.target.closest('[data-delete-standard]')) {
     const id = Number(e.target.closest('[data-delete-standard]').dataset.deleteStandard);
 
@@ -653,9 +676,6 @@ standardBody.addEventListener('input', e => {
   item[t.dataset.field] = t.value;
   scheduleUpdate('standard_items', id, t.dataset.field, t.value);
 
-  if (t.dataset.field === 'link') {
-    renderStandards();
-  }
 });
 
 standardBody.addEventListener('change', e => {
@@ -684,9 +704,6 @@ archiveBody.addEventListener('input', e => {
   item[t.dataset.field] = t.value;
   scheduleUpdate('orders', id, t.dataset.field, t.value);
 
-  if (t.dataset.field === 'link') {
-    renderArchive();
-  }
 });
 
 archiveBody.addEventListener('click', async e => {
